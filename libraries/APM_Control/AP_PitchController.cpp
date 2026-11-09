@@ -299,6 +299,11 @@ float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool di
         float roll_prop = (roll_wrapped - roll_limit_margin) / (float)(9000 - roll_limit_margin);
         desired_rate *= (1 - roll_prop);
     }
+    if (_pitch_rate_override_active) {
+        const float pitch_rate_override_dps = _pitch_rate_override_dps;
+        _pitch_rate_override_active = false;
+        return _get_rate_out(pitch_rate_override_dps, scaler, disable_integrator, aspeed, ground_mode);
+    }
 
     return _get_rate_out(desired_rate, scaler, disable_integrator, aspeed, ground_mode);
 }

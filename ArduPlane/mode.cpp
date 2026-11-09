@@ -55,6 +55,16 @@ bool Mode::enter()
     plane.guided_state.last_forced_rpy_ms.zero();
     plane.guided_state.last_forced_throttle_ms = 0;
 
+    // -------------------------------------------------------------------------
+    // External GUIDED pitch-rate control
+    // -------------------------------------------------------------------------
+    plane.guided_state.desired_pitch_rate_rps = 0.0f;
+    plane.guided_state.last_desired_pitch_rate_ms = 0;
+    plane.guided_state.desired_roll_rate_rps = 0.0f;
+    plane.guided_state.last_desired_roll_rate_ms = 0;
+    plane.guided_state.desired_yaw_rate_rps = 0.0f;
+    plane.guided_state.last_desired_yaw_rate_ms = 0;
+
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     plane.guided_state.target_heading = -4; // radians here are in range -3.14 to 3.14, so a default value needs to be outside that range
     plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;

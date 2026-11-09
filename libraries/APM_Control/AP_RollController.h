@@ -16,8 +16,21 @@ public:
 
     void convert_pid();
 
+    void set_roll_rate_override(float desired_rate_dps)
+    {
+        _roll_rate_override_active = true;
+        _roll_rate_override_dps = desired_rate_dps;
+    }
+
+    void clear_roll_rate_override()
+    {
+        _roll_rate_override_active = false;
+    }
+
 private:
     float get_airspeed() const override;
     bool is_underspeed(const float aspeed) const override;
     float get_measured_rate() const override;
+    bool _roll_rate_override_active = false;
+    float _roll_rate_override_dps = 0.0f;
 };

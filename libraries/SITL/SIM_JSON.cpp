@@ -162,7 +162,10 @@ uint32_t JSON::parse_sensors(const char *json)
         p += strlen(key.section)+1;
 
         // find key inside section
-        p = strstr(p, key.key);
+        // Match the full key so "wind_velocity" cannot be read as "velocity".
+        char quoted_key[32];
+        snprintf(quoted_key, sizeof(quoted_key), "\"%s\"", key.key);
+        p = strstr(p, quoted_key);
         if (!p) {
             if (key.required) {
                 printf("Failed to find key %s/%s\n", key.section, key.key);
@@ -174,7 +177,7 @@ uint32_t JSON::parse_sensors(const char *json)
         // record the keys that are found
         received_bitmask |= 1U << i;
 
-        p += strlen(key.key)+2;
+        p += strlen(key.key)+3;
         switch (key.type) {
             case DATA_UINT64:
                 *((uint64_t *)key.ptr) = strtoull(p, nullptr, 10);
@@ -317,22 +320,18 @@ void JSON::recv_fdm(const struct sitl_input &input)
         dcm.from_euler(state.attitude[0], state.attitude[1], state.attitude[2]);
     }
 
+    // The optional wind vector is air-mass velocity in the NED world frame.
+    // Backends without it retain the existing still-air behavior.
+    wind_ef = (received_bitmask & WIND) ? state.wind : Vector3f();
+    velocity_air_ef = velocity_ef - wind_ef;
+    velocity_air_bf = dcm.transposed() * velocity_air_ef;
+
     if ((received_bitmask & AIRSPEED)) {
         // received airspeed directly
         airspeed = state.airspeed;
 
         airspeed_pitot = state.airspeed;
     } else {
-        
-        // wind is not supported yet for JSON sim, assume zero for now        
-        wind_ef.zero(); 
-
-        // velocity relative to airmass in Earth's frame
-        velocity_air_ef = velocity_ef - wind_ef;
-
-        // velocity relative to airmass in body frame
-        velocity_air_bf = dcm.transposed() * velocity_air_ef;
-
         // airspeed fix for eas2tas
         update_eas_airspeed();
     }

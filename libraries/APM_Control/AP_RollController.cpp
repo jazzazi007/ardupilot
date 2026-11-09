@@ -226,6 +226,12 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
     } else if (gains.rmax_pos && desired_rate > gains.rmax_pos) {
         desired_rate = gains.rmax_pos;
     }
+    if (_roll_rate_override_active) {
+        const float roll_rate_override_dps = _roll_rate_override_dps;
+        _roll_rate_override_active = false;
+       // gcs().send_text(MAV_SEVERITY_INFO, "Roll rate override active: %.1f deg/sec", roll_rate_override_dps);
+        return _get_rate_out(roll_rate_override_dps, scaler, disable_integrator, get_airspeed(), ground_mode);
+    }
 
     return _get_rate_out(desired_rate, scaler, disable_integrator, get_airspeed(), ground_mode);
 }

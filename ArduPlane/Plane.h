@@ -583,6 +583,14 @@ private:
         // last time we heard from the external controller
         Vector3l last_forced_rpy_ms;
 
+        // external GUIDED body pitch rate command in rad/s
+        float desired_pitch_rate_rps;
+        uint32_t last_desired_pitch_rate_ms;
+        float desired_roll_rate_rps;
+        uint32_t last_desired_roll_rate_ms;
+        float desired_yaw_rate_rps;
+        uint32_t last_desired_yaw_rate_ms;
+
         // throttle  commanded from external controller in percent
         float forced_throttle;
         uint32_t last_forced_throttle_ms;

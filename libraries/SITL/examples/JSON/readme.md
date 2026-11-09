@@ -86,6 +86,17 @@ Airspeed:
     airspeed (m/s)
 ```
 
+Wind velocity (optional):
+
+```
+    wind_velocity [north, east, down] (m/s, air-mass velocity in the NED world frame)
+```
+
+For example: `"wind_velocity":[5,0,0]` is air moving north at 5 m/s. When `airspeed`
+is omitted, SITL subtracts this vector from ground velocity to calculate
+equivalent airspeed and the virtual pitot response. If `wind_velocity` is omitted,
+SITL assumes still air. An explicit `airspeed` takes precedence.
+
 When first connecting you will see a message reporting what fields were successfully received. If any of the mandatory fields are missing SITL will stop, however it will run without the optional fields. This message can be used to double check SITL is receiving everything being sent by the physics backend.
 
 For example:

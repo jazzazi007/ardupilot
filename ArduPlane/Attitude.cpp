@@ -127,6 +127,7 @@ void Plane::stabilize_roll()
 float Plane::stabilize_roll_get_roll_out()
 {
     const float speed_scaler = get_speed_scaler();
+    rollController.clear_roll_rate_override();
 #if HAL_QUADPLANE_ENABLED
     if (!quadplane.use_fw_attitude_controllers()) {
         // use the VTOL rate for control, to ensure consistency
@@ -154,6 +155,12 @@ float Plane::stabilize_roll_get_roll_out()
     if (control_mode == &mode_stabilize && channel_roll->get_control_in() != 0) {
         disable_integrator = true;
     }
+    if (control_mode == &mode_guided &&
+        guided_state.last_desired_roll_rate_ms > 0 &&
+        AP_HAL::millis() - guided_state.last_desired_roll_rate_ms < 500U) {
+        rollController.set_roll_rate_override(degrees(guided_state.desired_roll_rate_rps));
+    }
+
     return rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, speed_scaler, disable_integrator,
                                         ground_mode && !(plane.flight_option_enabled(FlightOptions::DISABLE_GROUND_PID_SUPPRESSION)));
 }
@@ -180,6 +187,7 @@ void Plane::stabilize_pitch()
 float Plane::stabilize_pitch_get_pitch_out()
 {
     const float speed_scaler = get_speed_scaler();
+    pitchController.clear_pitch_rate_override();
 #if HAL_QUADPLANE_ENABLED
     if (!quadplane.use_fw_attitude_controllers()) {
         // use the VTOL rate for control, to ensure consistency
@@ -202,6 +210,7 @@ float Plane::stabilize_pitch_get_pitch_out()
         return pitch_out;
     }
 #endif
+
     // if LANDING_FLARE RCx_OPTION switch is set and in FW mode, manual throttle,throttle idle then set pitch to LAND_PITCH_DEG if flight option FORCE_FLARE_ATTITUDE is set
 #if HAL_QUADPLANE_ENABLED
     const bool quadplane_in_frwd_transition = quadplane.in_frwd_transition();
@@ -225,6 +234,12 @@ float Plane::stabilize_pitch_get_pitch_out()
         flare_mode == FlareMode::ENABLED_PITCH_TARGET &&
         throttle_at_zero()) {
         demanded_pitch = landing.get_pitch_cd();
+    }
+
+    if (control_mode == &mode_guided &&
+        guided_state.last_desired_pitch_rate_ms > 0 &&
+        AP_HAL::millis() - guided_state.last_desired_pitch_rate_ms < 500U) {
+        pitchController.set_pitch_rate_override(degrees(guided_state.desired_pitch_rate_rps));
     }
 
     return pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, speed_scaler, disable_integrator,
@@ -487,8 +502,25 @@ int16_t Plane::calc_nav_yaw_coordinated()
     int16_t commanded_rudder;
     bool using_rate_controller = false;
 
+    // Use a recent external body yaw-rate command in fixed-wing GUIDED mode.
+    if (control_mode == &mode_guided &&
+            guided_state.last_desired_yaw_rate_ms > 0 &&
+            millis() - guided_state.last_desired_yaw_rate_ms < 500U &&
+            yawController.rate_control_enabled()) {
+        const float desired_yaw_rate_dps = degrees(guided_state.desired_yaw_rate_rps);
+        static uint32_t last_yaw_rate_report_ms;
+        const uint32_t now_ms = millis();
+        if (last_yaw_rate_report_ms == 0 || now_ms - last_yaw_rate_report_ms >= 1000U) {
+            gcs().send_text(MAV_SEVERITY_INFO, "GUIDED yaw rate: %.1f deg/s", desired_yaw_rate_dps);
+            last_yaw_rate_report_ms = now_ms;
+        }
+        commanded_rudder = yawController.get_rate_out(
+            desired_yaw_rate_dps,
+            speed_scaler,
+            false);
+        using_rate_controller = true;
     // Received an external msg that guides yaw in the last 3 seconds?
-    if (control_mode->is_guided_mode() &&
+    } else if (control_mode->is_guided_mode() &&
             plane.guided_state.last_forced_rpy_ms.z > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.z < 3000) {
         commanded_rudder = plane.guided_state.forced_rpy_cd.z;
