@@ -293,6 +293,12 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
     // the in_recovery flag is single loop only
     in_recovery = false;
 
+    if (_roll_rate_override_active) {
+        const float roll_rate_override_dps = _roll_rate_override_dps;
+        _roll_rate_override_active = false;
+        return _get_rate_out(roll_rate_override_dps, scaler, disable_integrator, ground_mode);
+    }
+
     return _get_rate_out(desired_rate, scaler, disable_integrator, ground_mode);
 }
 

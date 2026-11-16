@@ -16,6 +16,17 @@ public:
     float get_rate_out(float desired_rate, float scaler);
     float get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode);
 
+    void set_roll_rate_override(float desired_rate_dps)
+    {
+        _roll_rate_override_active = true;
+        _roll_rate_override_dps = desired_rate_dps;
+    }
+
+    void clear_roll_rate_override()
+    {
+        _roll_rate_override_active = false;
+    }
+
     // setup a one loop FF scale multiplier. This replaces any previous scale applied
     // so should only be used when only one source of scaling is needed
     void set_ff_scale(float _ff_scale) { ff_scale = _ff_scale; }
@@ -78,4 +89,6 @@ private:
     float _get_rate_out(float desired_rate, float scaler, bool disable_integrator, bool ground_mode);
 
     bool in_recovery;
+    bool _roll_rate_override_active = false;
+    float _roll_rate_override_dps = 0.0f;
 };

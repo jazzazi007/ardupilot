@@ -1375,6 +1375,27 @@ void GCS_MAVLINK_Plane::handle_set_attitude_target(const mavlink_message_t &msg)
             // Update timer for external throttle
             plane.guided_state.last_forced_throttle_ms = now;
         }
+
+        // type_mask was inverted above, so a set bit means the field is enabled.
+        if ((att_target.type_mask & 0b00000010) && isfinite(att_target.body_pitch_rate)) {
+            plane.guided_state.desired_pitch_rate_rps = att_target.body_pitch_rate;
+            plane.guided_state.last_desired_pitch_rate_ms = now;
+        } else {
+            // A newer message that ignores pitch rate restores pitch-angle control.
+            plane.guided_state.last_desired_pitch_rate_ms = 0;
+        }
+        if ((att_target.type_mask & 0b00000001) && isfinite(att_target.body_roll_rate)) {
+            plane.guided_state.desired_roll_rate_rps = att_target.body_roll_rate;
+            plane.guided_state.last_desired_roll_rate_ms = now;
+        } else {
+            plane.guided_state.last_desired_roll_rate_ms = 0;
+        }
+        if ((att_target.type_mask & 0b00000100) && isfinite(att_target.body_yaw_rate)) {
+            plane.guided_state.desired_yaw_rate_rps = att_target.body_yaw_rate;
+            plane.guided_state.last_desired_yaw_rate_ms = now;
+        } else {
+            plane.guided_state.last_desired_yaw_rate_ms = 0;
+        }
     }
 
 void GCS_MAVLINK_Plane::handle_set_position_target_local_ned(const mavlink_message_t &msg)

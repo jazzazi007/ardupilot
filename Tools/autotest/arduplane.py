@@ -406,7 +406,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     time_boot_millis = 0 # FIXME
                     target_system = 1 # FIXME
                     target_component = 1 # FIXME
-                    type_mask = step["type_mask"] ^ 0xFF # FIXME
+                    # These are attitude-only commands; ignore all body-rate fields.
+                    type_mask = (step["type_mask"] & 0b11000000) ^ 0xFF
                     # attitude in radians:
                     q = quaternion.Quaternion([math.radians(step["roll"]),
                                                math.radians(step["pitch"]),
@@ -416,9 +417,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                                                           target_component,
                                                           type_mask,
                                                           q,
-                                                          0, # roll rate, not used in AP
-                                                          0, # pitch rate, not used in AP
-                                                          0, # yaw rate, not used in AP
+                                                          0, # roll rate ignored
+                                                          0, # pitch rate ignored
+                                                          0, # yaw rate ignored
                                                           step["throttle"])
         except Exception as e:
             self.change_mode('FBWA')
