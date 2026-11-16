@@ -747,6 +747,7 @@ protected:
 
     bool takeoff_started;
     Location start_loc;
+    uint32_t last_car_launch_message_ms;
 
     bool _enter() override;
 };

@@ -62,15 +62,25 @@ ModeTakeoff::ModeTakeoff() :
 bool ModeTakeoff::_enter()
 {
     takeoff_started = false;
+    last_car_launch_message_ms = AP_HAL::millis();
 
     return true;
 }
 
 void ModeTakeoff::update()
 {
+    // Keep wings level for car launch.
+    plane.nav_roll_cd = 0;
+    plane.update_load_factor();
+
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_car_launch_message_ms >= 500U) {
+        last_car_launch_message_ms = now_ms;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Takeoff mode: CAR LAUNCH is Enabled");
+    }
+
     // don't setup waypoints if we dont have a valid position and home!
     if (!(plane.current_loc.initialised() && AP::ahrs().home_is_set())) {
-        plane.calc_nav_roll();
         plane.calc_nav_pitch();
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
         return;
@@ -144,12 +154,11 @@ void ModeTakeoff::update()
 
     if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100.0);
-        plane.takeoff_calc_roll();
         plane.takeoff_calc_pitch();
     } else {
-        plane.calc_nav_roll();
         plane.calc_nav_pitch();
         plane.calc_throttle();
+        plane.nav_roll_cd = 0;
     }
 }
 
